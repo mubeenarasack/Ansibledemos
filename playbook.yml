@@ -1,0 +1,70 @@
+---
+- name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Set up Prometheus configuration
+      k8s:
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: prometheus-config
+            namespace: prometheus-ins-ansible
+          data:
+            prometheus.yml: |
+              global:
+                scrape_interval: 15s
+
+              scrape_configs:
+                - job_name: 'node'
+                  static_configs:
+                    - targets: ['localhost:9100']
+
+
+      register: prometheus_config
+
+    - name: Deploy Prometheus
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: prometheus-service
+            namespace: prometheus-ins-ansible
+          spec:
+            selector:
+              app: prometheus
+            ports:
+              - name: web
+                port: 9090
+                targetPort: 9090
+        wait: yes
+      register: prometheus_service
+
+    - name: Expose Prometheus service
+      k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: prometheus-ingress
+            namespace: prometheus-ins-ansible
+            annotations:
+              nginx.ingress.kubernetes.io/rewrite-target: /
+          spec:
+            rules:
+              - host: mcsp-cp-dev-eu-de-576fccc9ae6a376a3c3284d61e75d6c2-0000.eu-de.containers.appdomain.cloud
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: prometheus-service
+                          port:
+                            number: 9090
+        wait: yes
+      register: prometheus_ingress
