@@ -7,7 +7,7 @@
     ansible_python_interpreter: /usr/bin/ansible
   tasks:
     - name: install pre-requisites
-      sudo:
+      pip3:
         name:
           - openshift
           - pyyaml
