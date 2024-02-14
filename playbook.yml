@@ -5,13 +5,7 @@
   gather_facts: no
   vars:
     ansible_python_interpreter: /usr/bin/ansible
-  tasks:
-    - name: install pre-requisites
-      pip:
-        name:
-          - openshift
-          - pyyaml
-          - kubernetes       
+  tasks:    
     - name: Set up service account
       k8s:
         definition:
