@@ -4,14 +4,13 @@
   connection: local
   gather_facts: no
   tasks:
-  - name: install pre-requisites
-    pip:
-    name:
-      - openshift
-      - python
-      - pyyaml
-      - kubernetes 
-      
+    - name: install pre-requisites
+      pip:
+        name:
+          - openshift
+          - python
+          - pyyaml
+          - kubernetes       
     - name: Set up service account
       k8s:
         definition:
@@ -37,7 +36,6 @@
               targetPort: web
             selector:
               prometheus: prometheus
-
     - name: Set up clusterrole 
       k8s:
         definition:
