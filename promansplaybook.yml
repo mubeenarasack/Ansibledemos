@@ -1,0 +1,95 @@
+---
+- name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set up service account
+      k8s:
+        definition:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: prometheus
+            namespace: prometheus-ins-ansible
+
+    - name: Set up service 
+      k8s:
+        definition: 
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: prometheus
+            namespace: prometheus-ins-ansible
+          spec:
+            type: NodePort
+            ports:
+            - name: web
+              port: 9090
+              protocol: TCP
+              targetPort: web
+            selector:
+              prometheus: prometheus
+
+    - name: Set up clusterrole 
+      k8s:
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: prometheus
+          rules:
+          - apiGroups: [""]
+            resources:
+            - nodes
+            - services
+            - endpoints
+            - pods
+            verbs: ["get", "list", "watch"]
+          - apiGroups: [""]
+            resources:
+            - configmaps
+            verbs: ["get"]
+          - nonResourceURLs: ["/metrics"]
+            verbs: ["get"]
+
+    - name: Set up clusterrolebinding
+      k8s:
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: prometheus
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: prometheus
+          subjects:
+          - kind: ServiceAccount
+            name: prometheus
+            namespace: prometheus-ins-ansible
+    - name: Set up prometheus
+      k8s:
+        definition:
+          apiVersion: monitoring.coreos.com/v1
+          kind: Prometheus
+          metadata:
+            name: prometheus
+            labels:
+              prometheus: k8s
+            namespace: prometheus-ins-ansible
+          spec:
+            replicas: 2
+            serviceAccountName: prometheus
+            securityContext: {}
+            serviceMonitorSelector:
+              matchLabels:
+                team: frontend
+            ruleSelector:
+              matchLabels:
+                role: prometheus-rulefiles
+                prometheus: k8s
+            alerting:
+              alertmanagers:
+                - namespace: prometheus-ins-ansible
+                  name: alertmanager-main
+                  port: web
