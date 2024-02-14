@@ -8,7 +8,6 @@
       pip:
         name:
           - openshift
-          - python
           - pyyaml
           - kubernetes       
     - name: Set up service account
