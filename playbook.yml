@@ -1,12 +1,13 @@
 ---
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
   hosts: localhost
+  connection: local
   gather_facts: no
   vars:
     ansible_python_interpreter: /usr/bin/ansible
   tasks:
     - name: install pre-requisites
-      pip:
+      sudo:
         name:
           - openshift
           - pyyaml
