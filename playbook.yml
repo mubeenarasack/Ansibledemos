@@ -1,7 +1,6 @@
 ---
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
-  hosts: localhost
-  connection: local
+  hosts: mcsp-cp-dev-eu-de-576fccc9ae6a376a3c3284d61e75d6c2-0000.eu-de.containers.appdomain.cloud
   gather_facts: no
   vars:
     ansible_python_interpreter: /usr/bin/ansible
