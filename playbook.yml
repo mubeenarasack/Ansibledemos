@@ -1,6 +1,7 @@
 ---
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
   hosts: [127.0.0.1]
+  connection: local
   gather_facts: no
   vars:
     ansible_python_interpreter: /usr/bin/ansible
