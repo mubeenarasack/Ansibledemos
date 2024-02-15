@@ -1,6 +1,7 @@
 ---
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
   hosts: localhost
+  connection: local
   gather_facts: false
   tasks:
     - name: Set up Prometheus configuration
