@@ -1,6 +1,6 @@
 ---
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
-  hosts: [127.0.0.1]
+  hosts: localhost
   connection: local
   gather_facts: no
   vars:
