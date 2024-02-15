@@ -3,6 +3,8 @@
   hosts: localhost
   connection: local
   gather_facts: false
+  vars:
+    ansible_python_interpreter: /usr/bin/ansible
   tasks:
     - name: Set up Prometheus configuration
       k8s:
