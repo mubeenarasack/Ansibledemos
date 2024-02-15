@@ -1,5 +1,5 @@
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
-  hosts: localhost
+  hosts: [127.0.0.1]
   gather_facts: no
   tasks:
     - name: Creating prometheus user group
