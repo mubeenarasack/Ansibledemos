@@ -6,6 +6,12 @@
   vars:
     ansible_python_interpreter: /usr/bin/ansible
   tasks:
+    - name: Gather information about the remote file
+      ansible.builtin.stat:
+        path: /etc/prometheus/prometheus.yml
+      register: file_info
+    - debug:
+        var: file_info
     - name: Create Prometheus configuration file
       template:
         src: prometheus.yml.j2
