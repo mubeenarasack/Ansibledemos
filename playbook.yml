@@ -1,0 +1,128 @@
+---
+- name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: /usr/bin/ansible
+  tasks:
+    - name: Create Prometheus configuration file
+    template:
+      src: prometheus.yml.j2
+      dest: /etc/prometheus/prometheus.yml
+      owner: prometheus
+      group: prometheus
+      mode: 0644
+      
+    - name: Set up Prometheus statefulset
+      k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: prometheus-k8s
+            namespace: ansibletower-n1
+            labels:
+              app: prometheus-server
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: prometheus-server
+            template:
+              metadata:
+                labels:
+                  app: prometheus-server
+              spec:
+                containers:
+                  - name: prometheus
+                    image: prom/prometheus:v2.32.1
+                    imagePullPolicy: IfNotPresent
+                    args:
+                      - "--config.file=/etc/prometheus/prometheus.yml"
+                      - "--storage.tsdb.path=/prometheus/"
+                      - "--storage.tsdb.retention.time=7d"
+                      - "--storage.tsdb.no-lockfile"
+                      - '--web.enable-lifecycle'
+                      - '--storage.tsdb.min-block-duration=30m'
+                      - '--storage.tsdb.max-block-duration=30m'
+                    ports:
+                      - containerPort: 9090
+                    resources:
+                      requests:
+                        cpu: 500m
+                        memory: 4Gi
+                      limits:
+                        cpu: 1
+                        memory: 12Gi
+                    volumeMounts:
+                      - name: prometheus-config-volume
+                        mountPath: /etc/prometheus/
+                      - name: prometheus-test-volume
+                        mountPath: /prometheus/
+                  - name: prometheus-configmap-reload
+                    image: "jimmidyson/configmap-reload:v0.7.1"       
+                    imagePullPolicy: "IfNotPresent"
+                    args:
+                      - --volume-dir=/etc/prometheus
+                      - --webhook-url=http://localhost:9090/-/reload 
+                    volumeMounts:  
+                      - name: prometheus-config-volume
+                        mountPath: /etc/prometheus/
+                        readOnly: true              
+                  - name: oauth-proxy
+                    args:
+                      - -provider=openshift
+                      - -https-address=:9091
+                      - -http-address=
+                      - -email-domain=*
+                      - -upstream=http://localhost:9090
+                      - -tls-cert=/etc/tls/private/tls.crt
+                      - -tls-key=/etc/tls/private/tls.key
+                      - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+                      - -cookie-secret-file=/etc/proxy/secrets/session_secret
+                      - -openshift-service-account=prometheus-k8s
+                      - -openshift-sar={"resource":"namespaces","resourceName":"","namespace":"ansibletower-n1","verb":"get"}
+                      - >-
+                        -openshift-delegate-urls={"/": {"resource":"namespaces","resourceName":"","namespace":"ansibletower-n1","verb":"get"}}
+                      - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                      - -openshift-ca=/etc/pki/tls/cert.pem
+                      - -skip-auth-regex=^/metrics
+                    image: quay.io/openshift/origin-oauth-proxy:4.6
+                    imagePullPolicy: IfNotPresent
+                    ports:
+                      - name: oauth-proxy
+                        containerPort: 9091
+                        protocol: TCP
+                    volumeMounts:
+                      - mountPath: /etc/tls/private
+                        name: secret-prometheus-tls
+                      - mountPath: /etc/proxy/secrets
+                        name: secret-prometheus-proxy
+                serviceAccountName: prometheus-k8s
+                volumes:
+                  - name: prometheus-config-volume
+                    configMap:
+                      defaultMode: 420
+                      name: prometheus-server-conf
+                  - name: secret-prometheus-tls
+                    secret:
+                      defaultMode: 420
+                      secretName: prometheus-tls
+                  - name: secret-prometheus-proxy
+                    secret:
+                      defaultMode: 420
+                      secretName: prometheus-proxy
+
+            volumeClaimTemplates:
+              - kind: PersistentVolumeClaim
+                apiVersion: v1
+                metadata:
+                  name: prometheus-test-volume
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 100Gi
+                  volumeMode: Filesystem
