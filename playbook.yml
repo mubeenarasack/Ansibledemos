@@ -7,7 +7,7 @@
     ansible_python_interpreter: /usr/bin/ansible
   tasks:
     - name: Create Prometheus configuration file
-    template:
+      template:
       src: prometheus.yml.j2
       dest: /etc/prometheus/prometheus.yml
       owner: prometheus
