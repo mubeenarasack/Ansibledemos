@@ -1,6 +1,6 @@
 ---
 - name: Deploy Prometheus on IBM Cloud Kubernetes Service (IKS)
-  hosts: https://c115-e.eu-de.containers.cloud.ibm.com:31180
+  hosts: localhost
   connection: local
   gather_facts: false
   vars:
